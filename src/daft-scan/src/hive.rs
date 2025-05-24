@@ -2,6 +2,7 @@ use arrow2::datatypes::DataType;
 use common_error::DaftResult;
 use daft_core::{datatypes::Utf8Array, series::Series};
 use daft_decoding::inference::infer;
+use daft_decoding::deserialize::{deserialize_naive_datetime, deserialize_datetime};
 use daft_schema::{dtype::DaftDataType, field::Field, schema::Schema};
 use indexmap::IndexMap;
 
@@ -71,8 +72,58 @@ pub fn hive_partitions_to_series(
                 if value.is_empty() {
                     Some(Ok(Series::full_null(key, target_dtype, 1)))
                 } else {
-                    let daft_utf8_array = Utf8Array::from_values(key, std::iter::once(&value));
-                    Some(daft_utf8_array.cast(target_dtype))
+                    // Handle timestamp casting specially using Daft's datetime parsing
+                    match target_dtype {
+                        DaftDataType::Timestamp(time_unit, timezone) => {
+                            use arrow2::temporal_conversions;
+                            use std::sync::Arc;
+
+                            let mut fmt_idx = 0;
+                            let timestamp_value = if timezone.is_some() {
+                                let tz_str = timezone.as_ref().unwrap();
+                                match temporal_conversions::parse_offset(tz_str) {
+                                    Ok(parsed_tz) => {
+                                        deserialize_datetime(value, &parsed_tz, &mut fmt_idx)
+                                            .and_then(|dt| match time_unit {
+                                                daft_core::datatypes::TimeUnit::Seconds => Some(dt.timestamp()),
+                                                daft_core::datatypes::TimeUnit::Milliseconds => Some(dt.timestamp_millis()),
+                                                daft_core::datatypes::TimeUnit::Microseconds => Some(dt.timestamp_micros()),
+                                                daft_core::datatypes::TimeUnit::Nanoseconds => dt.timestamp_nanos_opt(),
+                                            })
+                                    }
+                                    Err(_) => None, // Invalid timezone, return None
+                                }
+                            } else {
+                                deserialize_naive_datetime(value, &mut fmt_idx)
+                                    .and_then(|dt| match time_unit {
+                                        daft_core::datatypes::TimeUnit::Seconds => Some(dt.and_utc().timestamp()),
+                                        daft_core::datatypes::TimeUnit::Milliseconds => Some(dt.and_utc().timestamp_millis()),
+                                        daft_core::datatypes::TimeUnit::Microseconds => Some(dt.and_utc().timestamp_micros()),
+                                        daft_core::datatypes::TimeUnit::Nanoseconds => dt.and_utc().timestamp_nanos_opt(),
+                                    })
+                            };
+
+                            if let Some(ts_value) = timestamp_value {
+                                let timestamp_array = arrow2::array::PrimitiveArray::<i64>::from_trusted_len_iter(
+                                    std::iter::once(Some(ts_value))
+                                ).to(target_dtype.to_arrow().unwrap());
+
+                                let new_field = Arc::new(daft_schema::field::Field::new(key, target_dtype.clone()));
+                                match daft_core::series::Series::from_arrow(new_field, Box::new(timestamp_array)) {
+                                    Ok(series) => Some(Ok(series)),
+                                    Err(e) => Some(Err(e)),
+                                }
+                            } else {
+                                // If parsing failed, return null
+                                Some(Ok(Series::full_null(key, target_dtype, 1)))
+                            }
+                        }
+                        _ => {
+                            // For non-timestamp types, use the existing casting logic
+                            let daft_utf8_array = Utf8Array::from_values(key, std::iter::once(&value));
+                            Some(daft_utf8_array.cast(target_dtype))
+                        }
+                    }
                 }
             } else {
                 None
