@@ -9,6 +9,7 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use common_error::DaftError;
 use futures::{stream::BoxStream, StreamExt, TryStreamExt};
+use percent_encoding::percent_decode;
 use snafu::{ResultExt, Snafu};
 use tokio::io::{AsyncReadExt, AsyncSeekExt};
 
@@ -129,6 +130,53 @@ impl LocalSource {
     pub async fn get_client() -> super::Result<Arc<Self>> {
         Ok(Self {}.into())
     }
+
+    /// Normalize a file:// URL to a local filesystem path.
+    /// Handles file:/, file://, and file:/// formats.
+    fn normalize_file_url(uri: &str) -> super::Result<String> {
+        let local_path = if let Some(path) = uri.strip_prefix("file:///") {
+            // file:/// format - absolute path with triple slash
+            format!("/{}", path)
+        } else if let Some(path) = uri.strip_prefix("file://") {
+            // file:// format - may or may not have leading slash
+            if path.starts_with('/') {
+                path.to_string()
+            } else {
+                format!("/{}", path)
+            }
+        } else if let Some(path) = uri.strip_prefix("file:/") {
+            // file:/ format (single slash) - commonly used by Iceberg
+            if path.starts_with('/') {
+                path.to_string()
+            } else {
+                format!("/{}", path)
+            }
+        } else {
+            return Err(Error::InvalidFilePath { path: uri.into() }.into());
+        };
+
+        Ok(local_path)
+    }
+
+    /// Try to access a path, first as-is, then with URL decoding if needed.
+    /// Returns the PathBuf if the file exists, or None if neither version exists.
+    fn try_path_with_url_decoding(path: &str) -> Option<PathBuf> {
+        // First try the path as-is (without URL decoding)
+        let path_buf: PathBuf = path.into();
+        if path_buf.exists() {
+            return Some(path_buf);
+        }
+
+        // If that doesn't work, try URL-decoding the path
+        if let Ok(decoded) = percent_decode(path.as_bytes()).decode_utf8() {
+            let decoded_path_buf: PathBuf = decoded.as_ref().into();
+            if decoded_path_buf.exists() {
+                return Some(decoded_path_buf);
+            }
+        }
+
+        None
+    }
 }
 
 pub struct LocalFile {
@@ -144,14 +192,15 @@ impl ObjectSource for LocalSource {
         range: Option<Range<usize>>,
         _io_stats: Option<IOStatsRef>,
     ) -> super::Result<GetResult> {
-        const LOCAL_PROTOCOL: &str = "file://";
-        if let Some(uri) = uri.strip_prefix(LOCAL_PROTOCOL) {
+        let local_path = Self::normalize_file_url(uri)?;
+
+        if let Some(path_buf) = Self::try_path_with_url_decoding(&local_path) {
             Ok(GetResult::File(LocalFile {
-                path: uri.into(),
+                path: path_buf,
                 range,
             }))
         } else {
-            Err(Error::InvalidFilePath { path: uri.into() }.into())
+            Err(Error::InvalidFilePath { path: uri.to_string() }.into())
         }
     }
 
@@ -161,39 +210,69 @@ impl ObjectSource for LocalSource {
         data: bytes::Bytes,
         _io_stats: Option<IOStatsRef>,
     ) -> super::Result<()> {
-        const LOCAL_PROTOCOL: &str = "file://";
-        if let Some(stripped_uri) = uri.strip_prefix(LOCAL_PROTOCOL) {
-            let mut file = std::fs::OpenOptions::new()
-                .create(true)
-                .truncate(true) // truncate file if it already exists...
-                .write(true)
-                .open(stripped_uri)
-                .with_context(|_| UnableToOpenFileForWritingSnafu { path: uri })?;
-            Ok(file
+        let local_path = Self::normalize_file_url(uri)?;
+
+        // First try the path as-is (without URL decoding)
+        if let Ok(mut file) = std::fs::OpenOptions::new()
+            .create(true)
+            .truncate(true)
+            .write(true)
+            .open(&local_path)
+        {
+            return Ok(file
                 .write_all(&data)
-                .with_context(|_| UnableToWriteToFileSnafu { path: uri })?)
-        } else {
-            Err(Error::InvalidFilePath { path: uri.into() }.into())
+                .with_context(|_| UnableToWriteToFileSnafu { path: uri })?);
+        }
+
+        // If that doesn't work, try URL-decoding the path
+        match percent_decode(local_path.as_bytes()).decode_utf8() {
+            Ok(decoded_path) => {
+                let mut file = std::fs::OpenOptions::new()
+                    .create(true)
+                    .truncate(true)
+                    .write(true)
+                    .open(decoded_path.as_ref())
+                    .with_context(|_| UnableToOpenFileForWritingSnafu { path: uri })?;
+                Ok(file
+                    .write_all(&data)
+                    .with_context(|_| UnableToWriteToFileSnafu { path: uri })?)
+            }
+            Err(_) => Err(Error::InvalidFilePath { path: uri.to_string() }.into()),
         }
     }
 
     async fn get_size(&self, uri: &str, _io_stats: Option<IOStatsRef>) -> super::Result<usize> {
-        const LOCAL_PROTOCOL: &str = "file://";
-        let Some(uri) = uri.strip_prefix(LOCAL_PROTOCOL) else {
-            return Err(Error::InvalidFilePath { path: uri.into() }.into());
-        };
-        let meta = tokio::fs::metadata(uri)
-            .await
-            .context(UnableToFetchFileMetadataSnafu {
-                path: uri.to_string(),
-            })?;
+        let local_path = Self::normalize_file_url(uri)?;
 
-        if meta.is_dir() {
-            Err(super::Error::NotAFile {
-                path: uri.to_owned(),
-            })
-        } else {
-            Ok(meta.len() as usize)
+        // First try the path as-is (without URL decoding)
+        if let Ok(meta) = tokio::fs::metadata(&local_path).await {
+            if meta.is_dir() {
+                return Err(super::Error::NotAFile {
+                    path: local_path,
+                });
+            } else {
+                return Ok(meta.len() as usize);
+            }
+        }
+
+        // If that doesn't work, try URL-decoding the path
+        match percent_decode(local_path.as_bytes()).decode_utf8() {
+            Ok(decoded_path) => {
+                let meta = tokio::fs::metadata(decoded_path.as_ref())
+                    .await
+                    .context(UnableToFetchFileMetadataSnafu {
+                        path: decoded_path.to_string(),
+                    })?;
+
+                if meta.is_dir() {
+                    Err(super::Error::NotAFile {
+                        path: decoded_path.to_string(),
+                    })
+                } else {
+                    Ok(meta.len() as usize)
+                }
+            }
+            Err(_) => Err(Error::InvalidFilePath { path: uri.to_string() }.into()),
         }
     }
 
@@ -259,52 +338,61 @@ impl ObjectSource for LocalSource {
         }
 
         const LOCAL_PROTOCOL: &str = "file://";
-        let uri = if uri.is_empty() {
+        let decoded_uri: std::borrow::Cow<str> = if uri.is_empty() {
             std::borrow::Cow::Owned(
                 std::env::current_dir()
                     .with_context(|_| UnableToFetchDirectoryEntriesSnafu { path: uri })?
                     .to_string_lossy()
                     .to_string(),
             )
-        } else if let Some(uri) = uri.strip_prefix(LOCAL_PROTOCOL) {
-            std::borrow::Cow::Borrowed(uri)
         } else {
-            return Err(Error::InvalidFilePath { path: uri.into() }.into());
+            let local_path = Self::normalize_file_url(uri)?;
+
+            // First try the path as-is (without URL decoding)
+            if tokio::fs::metadata(&local_path).await.is_ok() {
+                std::borrow::Cow::Owned(local_path)
+            } else {
+                // If that doesn't work, try URL-decoding the path
+                match percent_decode(local_path.as_bytes()).decode_utf8() {
+                    Ok(decoded_path) => std::borrow::Cow::Owned(decoded_path.to_string()),
+                    Err(_) => return Err(Error::InvalidFilePath { path: uri.to_string() }.into()),
+                }
+            }
         };
 
-        let meta = tokio::fs::metadata(uri.as_ref()).await.with_context(|_| {
+        let meta = tokio::fs::metadata(decoded_uri.as_ref()).await.with_context(|_| {
             UnableToFetchFileMetadataSnafu {
-                path: uri.to_string(),
+                path: decoded_uri.to_string(),
             }
         })?;
         if meta.file_type().is_file() {
             // Provided uri points to a file, so only return that file.
             return Ok(futures::stream::iter([Ok(FileMetadata {
-                filepath: format!("{LOCAL_PROTOCOL}{uri}"),
+                filepath: format!("{LOCAL_PROTOCOL}{}", decoded_uri),
                 size: Some(meta.len()),
                 filetype: object_io::FileType::File,
             })])
             .boxed());
         }
-        let dir_entries = tokio::fs::read_dir(uri.as_ref()).await.with_context(|_| {
+        let dir_entries = tokio::fs::read_dir(decoded_uri.as_ref()).await.with_context(|_| {
             UnableToFetchDirectoryEntriesSnafu {
-                path: uri.to_string(),
+                path: decoded_uri.to_string(),
             }
         })?;
         let dir_stream = tokio_stream::wrappers::ReadDirStream::new(dir_entries);
-        let uri = Arc::new(uri.to_string());
+        let decoded_uri = Arc::new(decoded_uri.to_string());
         let file_meta_stream = dir_stream.then(move |entry| {
-            let uri = uri.clone();
+            let decoded_uri = decoded_uri.clone();
             async move {
                 let entry = entry.with_context(|_| UnableToFetchDirectoryEntriesSnafu {
-                    path: uri.to_string(),
+                    path: decoded_uri.to_string(),
                 })?;
 
                 // NOTE: `entry` returned by ReadDirStream can potentially mix posix-delimiters ("/") and windows-delimiter ("\")
                 // on Windows machines if we naively use `entry.path()`. Manually concatting the entries to the uri is safer.
                 let path = format!(
                     "{}{PATH_SEGMENT_DELIMITER}{}",
-                    uri.trim_end_matches(PATH_SEGMENT_DELIMITER),
+                    decoded_uri.trim_end_matches(PATH_SEGMENT_DELIMITER),
                     entry.file_name().to_string_lossy()
                 );
 
