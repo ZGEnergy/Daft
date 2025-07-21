@@ -1527,7 +1527,7 @@ dependencies = [
 
 [[package]]
 name = "common-arrow-ffi"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "arrow2",
  "pyo3",
@@ -1535,7 +1535,7 @@ dependencies = [
 
 [[package]]
 name = "common-daft-config"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "common-io-config",
  "common-py-serde",
@@ -1546,7 +1546,7 @@ dependencies = [
 
 [[package]]
 name = "common-display"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "comfy-table 7.1.4",
  "indexmap 2.8.0",
@@ -1557,7 +1557,7 @@ dependencies = [
 
 [[package]]
 name = "common-error"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "arrow-schema",
  "arrow2",
@@ -1570,7 +1570,7 @@ dependencies = [
 
 [[package]]
 name = "common-file-formats"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "common-error",
  "common-py-serde",
@@ -1582,14 +1582,14 @@ dependencies = [
 
 [[package]]
 name = "common-hashable-float-wrapper"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "common-io-config"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "aws-credential-types",
  "chrono",
@@ -1605,7 +1605,7 @@ dependencies = [
 
 [[package]]
 name = "common-macros"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "proc-macro-crate",
  "proc-macro-error",
@@ -1616,7 +1616,7 @@ dependencies = [
 
 [[package]]
 name = "common-partitioning"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "common-error",
  "common-py-serde",
@@ -1627,7 +1627,7 @@ dependencies = [
 
 [[package]]
 name = "common-py-serde"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "bincode",
  "pyo3",
@@ -1636,7 +1636,7 @@ dependencies = [
 
 [[package]]
 name = "common-resource-request"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "common-error",
  "common-hashable-float-wrapper",
@@ -1647,7 +1647,7 @@ dependencies = [
 
 [[package]]
 name = "common-runtime"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "common-error",
  "futures",
@@ -1658,7 +1658,7 @@ dependencies = [
 
 [[package]]
 name = "common-scan-info"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "common-daft-config",
  "common-display",
@@ -1674,7 +1674,7 @@ dependencies = [
 
 [[package]]
 name = "common-system-info"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "pyo3",
  "sysinfo",
@@ -1682,7 +1682,7 @@ dependencies = [
 
 [[package]]
 name = "common-tracing"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "common-runtime",
  "opentelemetry",
@@ -1696,14 +1696,14 @@ dependencies = [
 
 [[package]]
 name = "common-treenode"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "common-error",
 ]
 
 [[package]]
 name = "common-version"
-version = "0.3.0-dev0"
+version = "0.4.18"
 
 [[package]]
 name = "concurrent-queue"
@@ -1996,7 +1996,7 @@ dependencies = [
 
 [[package]]
 name = "daft"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "common-daft-config",
  "common-display",
@@ -2057,7 +2057,7 @@ dependencies = [
 
 [[package]]
 name = "daft-algebra"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "common-error",
  "common-treenode",
@@ -2069,7 +2069,7 @@ dependencies = [
 
 [[package]]
 name = "daft-catalog"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "common-error",
  "daft-core",
@@ -2081,7 +2081,7 @@ dependencies = [
 
 [[package]]
 name = "daft-cli"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "clap 4.5.35",
  "daft-dashboard",
@@ -2090,7 +2090,7 @@ dependencies = [
 
 [[package]]
 name = "daft-compression"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "async-compression",
  "tokio",
@@ -2099,7 +2099,7 @@ dependencies = [
 
 [[package]]
 name = "daft-connect"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "arrow2",
  "common-error",
@@ -2134,7 +2134,7 @@ dependencies = [
 
 [[package]]
 name = "daft-context"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "common-daft-config",
  "common-error",
@@ -2145,7 +2145,7 @@ dependencies = [
 
 [[package]]
 name = "daft-core"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "arrow2",
  "bincode",
@@ -2182,7 +2182,7 @@ dependencies = [
 
 [[package]]
 name = "daft-csv"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "arrow2",
  "async-compat",
@@ -2212,7 +2212,7 @@ dependencies = [
 
 [[package]]
 name = "daft-dashboard"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2230,7 +2230,7 @@ dependencies = [
 
 [[package]]
 name = "daft-decoding"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "arrow2",
  "atoi_simd",
@@ -2242,7 +2242,7 @@ dependencies = [
 
 [[package]]
 name = "daft-distributed"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "common-daft-config",
  "common-error",
@@ -2265,7 +2265,7 @@ dependencies = [
 
 [[package]]
 name = "daft-dsl"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "bincode",
  "common-error",
@@ -2289,7 +2289,7 @@ dependencies = [
 
 [[package]]
 name = "daft-functions"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "arrow2",
  "base64 0.22.1",
@@ -2317,7 +2317,7 @@ dependencies = [
 
 [[package]]
 name = "daft-functions-json"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "common-error",
  "daft-core",
@@ -2334,7 +2334,7 @@ dependencies = [
 
 [[package]]
 name = "daft-functions-list"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "arrow2",
  "common-error",
@@ -2347,7 +2347,7 @@ dependencies = [
 
 [[package]]
 name = "daft-functions-temporal"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "common-error",
  "daft-core",
@@ -2359,7 +2359,7 @@ dependencies = [
 
 [[package]]
 name = "daft-functions-utf8"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "aho-corasick",
  "arrow2",
@@ -2378,7 +2378,7 @@ dependencies = [
 
 [[package]]
 name = "daft-hash"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "common-error",
  "mur3",
@@ -2388,7 +2388,7 @@ dependencies = [
 
 [[package]]
 name = "daft-image"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "arrow2",
  "base64 0.22.1",
@@ -2404,7 +2404,7 @@ dependencies = [
 
 [[package]]
 name = "daft-io"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "async-recursion",
  "async-stream",
@@ -2436,6 +2436,7 @@ dependencies = [
  "log",
  "md5",
  "openssl-sys",
+ "percent-encoding",
  "pyo3",
  "rand 0.8.5",
  "regex",
@@ -2454,7 +2455,7 @@ dependencies = [
 
 [[package]]
 name = "daft-json"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "arrow2",
  "chrono",
@@ -2486,7 +2487,7 @@ dependencies = [
 
 [[package]]
 name = "daft-local-execution"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "async-trait",
  "common-daft-config",
@@ -2533,7 +2534,7 @@ dependencies = [
 
 [[package]]
 name = "daft-local-plan"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "common-error",
  "common-py-serde",
@@ -2550,7 +2551,7 @@ dependencies = [
 
 [[package]]
 name = "daft-logical-plan"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "common-daft-config",
  "common-display",
@@ -2589,7 +2590,7 @@ dependencies = [
 
 [[package]]
 name = "daft-micropartition"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "arrow2",
  "bincode",
@@ -2619,7 +2620,7 @@ dependencies = [
 
 [[package]]
 name = "daft-minhash"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "approx",
  "common-error",
@@ -2633,7 +2634,7 @@ dependencies = [
 
 [[package]]
 name = "daft-parquet"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "arrow2",
  "async-compat",
@@ -2665,7 +2666,7 @@ dependencies = [
 
 [[package]]
 name = "daft-physical-plan"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "common-daft-config",
  "common-display",
@@ -2690,7 +2691,7 @@ dependencies = [
 
 [[package]]
 name = "daft-py-runners"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "common-error",
  "daft-logical-plan",
@@ -2700,7 +2701,7 @@ dependencies = [
 
 [[package]]
 name = "daft-recordbatch"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "arrow-array",
  "arrow2",
@@ -2726,7 +2727,7 @@ dependencies = [
 
 [[package]]
 name = "daft-scan"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "arrow2",
  "common-daft-config",
@@ -2763,7 +2764,7 @@ dependencies = [
 
 [[package]]
 name = "daft-scheduler"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "common-daft-config",
  "common-display",
@@ -2785,7 +2786,7 @@ dependencies = [
 
 [[package]]
 name = "daft-schema"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "arrow2",
  "common-arrow-ffi",
@@ -2806,7 +2807,7 @@ dependencies = [
 
 [[package]]
 name = "daft-session"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "daft-catalog",
  "daft-core",
@@ -2818,7 +2819,7 @@ dependencies = [
 
 [[package]]
 name = "daft-shuffles"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "arrow-flight",
  "arrow-ipc",
@@ -2843,7 +2844,7 @@ dependencies = [
 
 [[package]]
 name = "daft-sketch"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "arrow2",
  "common-error",
@@ -2854,7 +2855,7 @@ dependencies = [
 
 [[package]]
 name = "daft-sql"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "arrow2",
  "common-daft-config",
@@ -2882,7 +2883,7 @@ dependencies = [
 
 [[package]]
 name = "daft-stats"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "common-error",
  "daft-core",
@@ -2894,7 +2895,7 @@ dependencies = [
 
 [[package]]
 name = "daft-warc"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "arrow2",
  "chrono",
@@ -2917,7 +2918,7 @@ dependencies = [
 
 [[package]]
 name = "daft-writers"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "arrow-schema",
  "arrow2",
@@ -4008,7 +4009,7 @@ dependencies = [
 
 [[package]]
 name = "hyperloglog"
-version = "0.3.0-dev0"
+version = "0.4.18"
 
 [[package]]
 name = "iana-time-zone"
@@ -6870,7 +6871,7 @@ dependencies = [
 
 [[package]]
 name = "spark-connect"
-version = "0.3.0-dev0"
+version = "0.4.18"
 dependencies = [
  "prost 0.13.5",
  "prost-types",
