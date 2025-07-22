@@ -2,22 +2,22 @@ use std::sync::Arc;
 
 use common_error::DaftResult;
 use daft_core::prelude::SchemaRef;
-use daft_dsl::{expr::bound_expr::BoundExpr, ExprRef};
+use daft_dsl::expr::bound_expr::BoundExpr;
 use daft_micropartition::MicroPartition;
 use daft_recordbatch::{make_probeable_builder, ProbeState, ProbeableBuilder, RecordBatch};
 use itertools::Itertools;
 use tracing::{info_span, instrument};
 
 use super::blocking_sink::{
-    BlockingSink, BlockingSinkFinalizeResult, BlockingSinkSinkResult, BlockingSinkState,
-    BlockingSinkStatus,
+    BlockingSink, BlockingSinkFinalizeOutput, BlockingSinkFinalizeResult, BlockingSinkSinkResult,
+    BlockingSinkState, BlockingSinkStatus,
 };
 use crate::{state_bridge::BroadcastStateBridgeRef, ExecutionTaskSpawner};
 
 enum ProbeTableState {
     Building {
         probe_table_builder: Option<Box<dyn ProbeableBuilder>>,
-        projection: Vec<ExprRef>,
+        projection: Vec<BoundExpr>,
         tables: Vec<RecordBatch>,
     },
     Done,
@@ -26,7 +26,7 @@ enum ProbeTableState {
 impl ProbeTableState {
     fn new(
         key_schema: &SchemaRef,
-        projection: Vec<ExprRef>,
+        projection: Vec<BoundExpr>,
         nulls_equal_aware: Option<&Vec<bool>>,
         track_indices: bool,
     ) -> DaftResult<Self> {
@@ -56,12 +56,7 @@ impl ProbeTableState {
             }
             for table in input_tables.iter() {
                 tables.push(table.clone());
-                let projection = projection
-                    .iter()
-                    .map(|expr| BoundExpr::try_new(expr.clone(), &table.schema))
-                    .collect::<DaftResult<Vec<_>>>()?;
-
-                let join_keys = table.eval_expression_list(&projection)?;
+                let join_keys = table.eval_expression_list(projection)?;
 
                 probe_table_builder.add_table(&join_keys)?;
             }
@@ -97,7 +92,7 @@ impl BlockingSinkState for ProbeTableState {
 
 pub struct HashJoinBuildSink {
     key_schema: SchemaRef,
-    projection: Vec<ExprRef>,
+    projection: Vec<BoundExpr>,
     nulls_equal_aware: Option<Vec<bool>>,
     track_indices: bool,
     probe_state_bridge: BroadcastStateBridgeRef<ProbeState>,
@@ -106,7 +101,7 @@ pub struct HashJoinBuildSink {
 impl HashJoinBuildSink {
     pub(crate) fn new(
         key_schema: SchemaRef,
-        projection: Vec<ExprRef>,
+        projection: Vec<BoundExpr>,
         nulls_equal_aware: Option<Vec<bool>>,
         track_indices: bool,
         probe_state_bridge: BroadcastStateBridgeRef<ProbeState>,
@@ -176,7 +171,7 @@ impl BlockingSink for HashJoinBuildSink {
         let finalized_probe_state = probe_table_state.finalize();
         self.probe_state_bridge
             .set_state(finalized_probe_state.into());
-        Ok(None).into()
+        Ok(BlockingSinkFinalizeOutput::Finished(vec![])).into()
     }
 
     fn max_concurrency(&self) -> usize {

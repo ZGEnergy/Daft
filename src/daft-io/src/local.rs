@@ -1,4 +1,5 @@
 use std::{
+    any::Any,
     io::{SeekFrom, Write},
     ops::Range,
     path::PathBuf,
@@ -15,10 +16,11 @@ use tokio::io::{AsyncReadExt, AsyncSeekExt};
 
 use super::{
     object_io::{GetResult, ObjectSource},
-    Result,
+    InvalidRangeRequestSnafu, Result,
 };
 use crate::{
     object_io::{self, FileMetadata, LSResult},
+    range::GetRange,
     stats::IOStatsRef,
     FileFormat,
 };
@@ -189,10 +191,15 @@ impl ObjectSource for LocalSource {
     async fn get(
         &self,
         uri: &str,
-        range: Option<Range<usize>>,
-        _io_stats: Option<IOStatsRef>,
+        range: Option<GetRange>,
+        io_stats: Option<IOStatsRef>,
     ) -> super::Result<GetResult> {
         let local_path = Self::normalize_file_url(uri)?;
+        let size = self.get_size(uri, io_stats).await?;
+        let range = range
+            .map(|r| r.as_range(size))
+            .transpose()
+            .context(InvalidRangeRequestSnafu)?;
 
         if let Some(path_buf) = Self::try_path_with_url_decoding(&local_path) {
             Ok(GetResult::File(LocalFile {
@@ -423,6 +430,10 @@ impl ObjectSource for LocalSource {
         });
         Ok(file_meta_stream.boxed())
     }
+
+    fn as_any_arc(self: Arc<Self>) -> Arc<dyn Any + Send + Sync> {
+        self
+    }
 }
 
 pub async fn collect_file(local_file: LocalFile) -> Result<Bytes> {
@@ -468,6 +479,7 @@ mod tests {
     use std::{default, io::Write};
 
     use crate::{
+        integrations::test_full_get,
         object_io::{FileMetadata, FileType, ObjectSource},
         HttpSource, LocalSource, Result,
     };
@@ -497,46 +509,7 @@ mod tests {
         let parquet_file_path = format!("file://{}", file1.path().to_str().unwrap());
         let client = LocalSource::get_client().await?;
 
-        let try_all_bytes = client
-            .get(&parquet_file_path, None, None)
-            .await?
-            .bytes()
-            .await?;
-        assert_eq!(try_all_bytes.len(), bytes.len());
-        assert_eq!(try_all_bytes, bytes);
-
-        let first_bytes = client
-            .get(&parquet_file_path, Some(0..10), None)
-            .await?
-            .bytes()
-            .await?;
-        assert_eq!(first_bytes.len(), 10);
-        assert_eq!(first_bytes.as_ref(), &bytes[..10]);
-
-        let first_bytes = client
-            .get(&parquet_file_path, Some(10..100), None)
-            .await?
-            .bytes()
-            .await?;
-        assert_eq!(first_bytes.len(), 90);
-        assert_eq!(first_bytes.as_ref(), &bytes[10..100]);
-
-        let last_bytes = client
-            .get(
-                &parquet_file_path,
-                Some((bytes.len() - 10)..(bytes.len() + 10)),
-                None,
-            )
-            .await?
-            .bytes()
-            .await?;
-        assert_eq!(last_bytes.len(), 10);
-        assert_eq!(last_bytes.as_ref(), &bytes[(bytes.len() - 10)..]);
-
-        let size_from_get_size = client.get_size(parquet_file_path.as_str(), None).await?;
-        assert_eq!(size_from_get_size, bytes.len());
-
-        Ok(())
+        test_full_get(client, &parquet_file_path, &bytes).await
     }
 
     #[tokio::test]

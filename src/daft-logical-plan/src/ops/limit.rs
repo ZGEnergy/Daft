@@ -1,17 +1,20 @@
 use std::sync::Arc;
 
+use serde::{Deserialize, Serialize};
+
 use crate::{
     stats::{ApproxStats, PlanStats, StatsState},
     LogicalPlan,
 };
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Limit {
     pub plan_id: Option<usize>,
+    pub node_id: Option<usize>,
     // Upstream node.
     pub input: Arc<LogicalPlan>,
     // Limit on number of rows.
-    pub limit: i64,
+    pub limit: u64,
     // Whether to send tasks in waves (maximize throughput) or
     // eagerly one-at-a-time (maximize time-to-first-result)
     pub eager: bool,
@@ -19,9 +22,10 @@ pub struct Limit {
 }
 
 impl Limit {
-    pub(crate) fn new(input: Arc<LogicalPlan>, limit: i64, eager: bool) -> Self {
+    pub(crate) fn new(input: Arc<LogicalPlan>, limit: u64, eager: bool) -> Self {
         Self {
             plan_id: None,
+            node_id: None,
             input,
             limit,
             eager,
@@ -31,6 +35,11 @@ impl Limit {
 
     pub fn with_plan_id(mut self, plan_id: usize) -> Self {
         self.plan_id = Some(plan_id);
+        self
+    }
+
+    pub fn with_node_id(mut self, node_id: usize) -> Self {
+        self.node_id = Some(node_id);
         self
     }
 

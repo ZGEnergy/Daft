@@ -353,8 +353,17 @@ impl<T> FunctionArgs<T> {
         Ok(slf)
     }
 
+    /// Creates an empty FunctionArgs<T> instance.
+    pub fn empty() -> Self {
+        Self(vec![])
+    }
+
     pub fn new_unchecked(inner: Vec<FunctionArg<T>>) -> Self {
         Self(inner)
+    }
+
+    pub fn new_unnamed(inner: Vec<T>) -> Self {
+        Self(inner.into_iter().map(FunctionArg::Unnamed).collect())
     }
 
     pub fn is_empty(&self) -> bool {

@@ -4,6 +4,7 @@ use common_error::DaftError;
 use daft_core::prelude::*;
 use daft_dsl::{exprs_to_schema, ExprRef};
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 use snafu::ResultExt;
 
 use crate::{
@@ -20,10 +21,11 @@ use crate::{
 ///
 /// It is currently unavailable in the Python API and only constructed by the
 /// Daft logical optimizer.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TopN {
     /// An id for the plan.
     pub plan_id: Option<usize>,
+    pub node_id: Option<usize>,
     /// Upstream node.
     pub input: Arc<LogicalPlan>,
     /// Sort properties.
@@ -31,7 +33,7 @@ pub struct TopN {
     pub descending: Vec<bool>,
     pub nulls_first: Vec<bool>,
     /// Limit on number of rows.
-    pub limit: i64,
+    pub limit: u64,
     /// The plan statistics.
     pub stats_state: StatsState,
 }
@@ -42,7 +44,7 @@ impl TopN {
         sort_by: Vec<ExprRef>,
         descending: Vec<bool>,
         nulls_first: Vec<bool>,
-        limit: i64,
+        limit: u64,
     ) -> Result<Self> {
         if sort_by.is_empty() {
             return Err(DaftError::InternalError(
@@ -67,6 +69,7 @@ impl TopN {
 
         Ok(Self {
             plan_id: None,
+            node_id: None,
             input,
             sort_by,
             descending,
@@ -78,6 +81,11 @@ impl TopN {
 
     pub fn with_plan_id(mut self, id: usize) -> Self {
         self.plan_id = Some(id);
+        self
+    }
+
+    pub fn with_node_id(mut self, node_id: usize) -> Self {
+        self.node_id = Some(node_id);
         self
     }
 

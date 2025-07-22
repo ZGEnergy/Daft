@@ -14,6 +14,7 @@ use daft_dsl::{
 use indexmap::IndexSet;
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     logical_plan::{self},
@@ -22,7 +23,7 @@ use crate::{
     LogicalPlan, LogicalPlanRef,
 };
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct JoinPredicate(Option<ExprRef>);
 
 impl JoinPredicate {
@@ -171,9 +172,10 @@ impl TryFrom<ExprRef> for JoinPredicate {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Join {
     pub plan_id: Option<usize>,
+    pub node_id: Option<usize>,
     // Upstream nodes.
     pub left: Arc<LogicalPlan>,
     pub right: Arc<LogicalPlan>,
@@ -201,6 +203,7 @@ impl Join {
 
         Ok(Self {
             plan_id: None,
+            node_id: None,
             left,
             right,
             on,
@@ -213,6 +216,11 @@ impl Join {
 
     pub fn with_plan_id(mut self, plan_id: usize) -> Self {
         self.plan_id = Some(plan_id);
+        self
+    }
+
+    pub fn with_node_id(mut self, node_id: usize) -> Self {
+        self.node_id = Some(node_id);
         self
     }
 

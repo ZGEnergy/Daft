@@ -86,6 +86,7 @@ impl OptimizerRule for DetectMonotonicId {
                             MonotonicallyIncreasingId::try_new(
                                 project.input.clone(),
                                 Some(column_name),
+                                None, // No starting offset specified since there isn't a way to specify one in an expression, at the moment
                             )?,
                         ));
 
@@ -116,7 +117,7 @@ impl OptimizerRule for DetectMonotonicId {
 mod tests {
     use common_error::DaftResult;
     use common_scan_info::Pushdowns;
-    use daft_functions::sequence::monotonically_increasing_id::monotonically_increasing_id;
+    use daft_functions::monotonically_increasing_id::monotonically_increasing_id;
     use daft_schema::{dtype::DataType, field::Field};
 
     use crate::{

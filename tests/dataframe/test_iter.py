@@ -5,6 +5,7 @@ import pyarrow as pa
 import pytest
 
 import daft
+from daft.errors import UDFException
 from tests.conftest import get_tests_daft_runner_name
 
 
@@ -180,7 +181,7 @@ def test_iter_exception(make_df):
         assert next(it) == {"a": 0, "b": 0}
 
         # Ensure the exception does trigger if execution continues.
-        with pytest.raises(RuntimeError) as exc_info:
+        with pytest.raises(UDFException) as exc_info:
             list(it)
 
         # Ray's wrapping of the exception loses information about the `.cause`, but preserves it in the string error message
@@ -188,6 +189,8 @@ def test_iter_exception(make_df):
             assert "MockException" in str(exc_info.value)
         else:
             assert isinstance(exc_info.value.__cause__, MockException)
+
+        assert str(exc_info.value).endswith("failed when executing on inputs:\n  - a (Int64, length=2)")
 
 
 def test_iter_partitions_exception(make_df):
@@ -216,7 +219,7 @@ def test_iter_partitions_exception(make_df):
         assert part == {"a": [0, 1], "b": [0, 1]}
 
         # Ensure the exception does trigger if execution continues.
-        with pytest.raises(RuntimeError) as exc_info:
+        with pytest.raises(UDFException) as exc_info:
             res = list(it)
             if get_tests_daft_runner_name() == "ray":
                 ray.get(res)
@@ -226,3 +229,4 @@ def test_iter_partitions_exception(make_df):
             assert "MockException" in str(exc_info.value)
         else:
             assert isinstance(exc_info.value.__cause__, MockException)
+        assert str(exc_info.value).endswith("failed when executing on inputs:\n  - a (Int64, length=2)")

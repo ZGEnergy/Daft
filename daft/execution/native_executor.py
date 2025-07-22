@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterator
+from typing import TYPE_CHECKING
 
 from daft.daft import (
     LocalPhysicalPlan,
@@ -12,6 +12,8 @@ from daft.dataframe.display import MermaidOptions
 from daft.recordbatch import MicroPartition
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from daft.daft import PyDaftExecutionConfig
     from daft.logical.builder import LogicalPlanBuilder
     from daft.runners.partitioning import (
@@ -56,8 +58,8 @@ class NativeExecutor:
     ) -> str:
         """Pretty prints the current underlying logical plan."""
         if format == "ascii":
-            return self._executor.repr_ascii(builder._builder, daft_execution_config, simple)
+            return _NativeExecutor.repr_ascii(builder._builder, daft_execution_config, simple)
         elif format == "mermaid":
-            return self._executor.repr_mermaid(builder._builder, daft_execution_config, MermaidOptions(simple))
+            return _NativeExecutor.repr_mermaid(builder._builder, daft_execution_config, MermaidOptions(simple))
         else:
             raise ValueError(f"Unknown format: {format}")

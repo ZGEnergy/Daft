@@ -1,4 +1,4 @@
-use std::{ops::Range, sync::Arc, time::Duration};
+use std::{any::Any, ops::Range, sync::Arc, time::Duration};
 
 use async_trait::async_trait;
 use bytes::Bytes;
@@ -107,7 +107,11 @@ impl GetResult {
 
                             get_result = rp
                                 .source
-                                .get(&rp.input, rp.range.clone(), rp.io_stats.clone())
+                                .get(
+                                    &rp.input,
+                                    rp.range.clone().map(GetRange::from),
+                                    rp.io_stats.clone(),
+                                )
                                 .await?;
                             if let Self::Stream(stream, size, permit, _) = get_result {
                                 result = collect_bytes(stream, size, permit).await;
@@ -173,12 +177,17 @@ pub struct LSResult {
 
 use async_stream::stream;
 
+use crate::range::GetRange;
+
 #[async_trait]
 pub trait ObjectSource: Sync + Send {
+    /// Return the bytes with given range.
+    /// Will return [`Error::InvalidRangeRequest`] if range start is greater than range end
+    /// or range start is greater than object size.
     async fn get(
         &self,
         uri: &str,
-        range: Option<Range<usize>>,
+        range: Option<GetRange>,
         io_stats: Option<IOStatsRef>,
     ) -> super::Result<GetResult>;
 
@@ -235,4 +244,6 @@ pub trait ObjectSource: Sync + Send {
         };
         Ok(s.boxed())
     }
+
+    fn as_any_arc(self: Arc<Self>) -> Arc<dyn Any + Send + Sync>;
 }

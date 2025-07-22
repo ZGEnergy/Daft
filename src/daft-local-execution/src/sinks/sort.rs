@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
 use common_error::DaftResult;
-use daft_dsl::ExprRef;
+use daft_dsl::expr::bound_expr::BoundExpr;
 use daft_micropartition::MicroPartition;
 use itertools::Itertools;
 use tracing::{instrument, Span};
 
 use super::blocking_sink::{
-    BlockingSink, BlockingSinkFinalizeResult, BlockingSinkSinkResult, BlockingSinkState,
-    BlockingSinkStatus,
+    BlockingSink, BlockingSinkFinalizeOutput, BlockingSinkFinalizeResult, BlockingSinkSinkResult,
+    BlockingSinkState, BlockingSinkStatus,
 };
 use crate::ExecutionTaskSpawner;
 
@@ -44,7 +44,7 @@ impl BlockingSinkState for SortState {
 }
 
 struct SortParams {
-    sort_by: Vec<ExprRef>,
+    sort_by: Vec<BoundExpr>,
     descending: Vec<bool>,
     nulls_first: Vec<bool>,
 }
@@ -53,7 +53,7 @@ pub struct SortSink {
 }
 
 impl SortSink {
-    pub fn new(sort_by: Vec<ExprRef>, descending: Vec<bool>, nulls_first: Vec<bool>) -> Self {
+    pub fn new(sort_by: Vec<BoundExpr>, descending: Vec<bool>, nulls_first: Vec<bool>) -> Self {
         Self {
             params: Arc::new(SortParams {
                 sort_by,
@@ -103,7 +103,7 @@ impl BlockingSink for SortSink {
                         &params.descending,
                         &params.nulls_first,
                     )?);
-                    Ok(Some(sorted))
+                    Ok(BlockingSinkFinalizeOutput::Finished(vec![sorted]))
                 },
                 Span::current(),
             )

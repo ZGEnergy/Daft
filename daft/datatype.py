@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 import threading
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Callable, Union
 
 from daft.context import get_context
 from daft.daft import ImageMode, PyDataType, PyTimeUnit
-from daft.dependencies import pa
+from daft.dependencies import np, pa, pil_image
 
 if TYPE_CHECKING:
     import builtins
-
-    import numpy as np
 
 
 class TimeUnit:
@@ -97,6 +95,50 @@ class DataType:
             "We do not support creating a DataType via __init__ "
             "use a creator method like DataType.int32() or use DataType.from_arrow_type(pa_type)"
         )
+
+    @staticmethod
+    def _infer_dtype_from_pylist(data: list[Any]) -> DataType | None:
+        curr_dtype = None
+
+        for item in data:
+            if item is None:
+                continue
+
+            elif pil_image.module_available() and isinstance(item, pil_image.Image):
+                item_dtype = DataType.image(item.mode)
+                if curr_dtype is None:
+                    curr_dtype = item_dtype
+                elif not curr_dtype.is_image():
+                    return None
+                elif curr_dtype.image_mode and curr_dtype.image_mode != item_dtype.image_mode:
+                    curr_dtype = DataType.image()
+                else:
+                    assert curr_dtype.image_mode == item_dtype.image_mode or curr_dtype.image_mode is None
+                    pass
+
+            elif np.module_available() and isinstance(item, (np.ndarray, np.generic)):  # type: ignore[attr-defined]
+                try:
+                    inner_dtype = DataType.from_numpy_dtype(item.dtype)
+                except Exception:
+                    return None
+
+                shape = item.shape
+
+                if len(shape) == 0:
+                    return None
+                item_dtype = DataType.list(inner_dtype) if len(shape) == 1 else DataType.tensor(inner_dtype)
+
+                if curr_dtype is None:
+                    curr_dtype = item_dtype
+                elif curr_dtype != item_dtype:
+                    return None
+                else:
+                    pass
+
+            else:
+                return None
+
+        return curr_dtype
 
     @classmethod
     def _infer_type(cls, user_provided_type: DataTypeLike) -> DataType:
@@ -477,7 +519,8 @@ class DataType:
         elif isinstance(arrow_type, getattr(pa, "FixedShapeTensorType", ())):
             scalar_dtype = cls.from_arrow_type(arrow_type.value_type)
             return cls.tensor(scalar_dtype, tuple(arrow_type.shape))
-        elif isinstance(arrow_type, pa.PyExtensionType):
+        # Only check for PyExtensionType if pyarrow version is < 21.0.0
+        if hasattr(pa, "PyExtensionType") and isinstance(arrow_type, getattr(pa, "PyExtensionType")):
             # TODO(Clark): Add a native cross-lang extension type representation for PyExtensionTypes.
             raise ValueError(
                 "pyarrow extension types that subclass pa.PyExtensionType can't be used in Daft, since they can't be "
@@ -515,7 +558,7 @@ class DataType:
             return cls.python()
 
     @classmethod
-    def from_numpy_dtype(cls, np_type: np.dtype) -> DataType:
+    def from_numpy_dtype(cls, np_type: np.dtype[Any]) -> DataType:
         """Maps a Numpy datatype to a Daft DataType."""
         arrow_type = pa.from_numpy_dtype(np_type)
         return cls.from_arrow_type(arrow_type)
@@ -1116,7 +1159,7 @@ class DataType:
     def __eq__(self, other: object) -> builtins.bool:
         return isinstance(other, DataType) and self._dtype.is_equal(other._dtype)
 
-    def __reduce__(self) -> tuple:
+    def __reduce__(self) -> tuple[Callable[[PyDataType], DataType], tuple[PyDataType]]:
         return DataType._from_pydatatype, (self._dtype,)
 
     def __hash__(self) -> int:
@@ -1142,21 +1185,23 @@ def _ensure_registered_super_ext_type() -> None:
         with _EXT_TYPE_REGISTRATION_LOCK:
             if not _EXT_TYPE_REGISTERED:
 
-                class DaftExtension(pa.ExtensionType):
-                    def __init__(self, dtype, metadata=b""):
+                class DaftExtension(pa.ExtensionType):  # type: ignore[misc]
+                    def __init__(self, dtype: pa.DataType, metadata: bytes = b"") -> None:
                         # attributes need to be set first before calling
                         # super init (as that calls serialize)
                         self._metadata = metadata
                         super().__init__(dtype, "daft.super_extension")
 
-                    def __reduce__(self):
+                    def __reduce__(
+                        self,
+                    ) -> tuple[Callable[[pa.DataType, bytes], DaftExtension], tuple[pa.DataType, bytes]]:
                         return type(self).__arrow_ext_deserialize__, (self.storage_type, self.__arrow_ext_serialize__())
 
-                    def __arrow_ext_serialize__(self):
+                    def __arrow_ext_serialize__(self) -> bytes:
                         return self._metadata
 
                     @classmethod
-                    def __arrow_ext_deserialize__(cls, storage_type, serialized):
+                    def __arrow_ext_deserialize__(cls, storage_type: pa.DataType, serialized: bytes) -> DaftExtension:
                         return cls(storage_type, serialized)
 
                 _STATIC_DAFT_EXTENSION = DaftExtension

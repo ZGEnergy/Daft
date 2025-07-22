@@ -359,7 +359,7 @@ def test_series_cast_python_to_list(dtype) -> None:
         (1, 2),
         None,
     ]
-    s = Series.from_pylist(data, pyobj="force")
+    s = Series.from_pylist(data, dtype=DataType.python())
 
     target_dtype = DataType.list(DataType.from_arrow_type(dtype))
 
@@ -388,7 +388,7 @@ def test_series_cast_python_to_fixed_size_list(dtype) -> None:
         (1, 2, 3),
         None,
     ]
-    s = Series.from_pylist(data, pyobj="force")
+    s = Series.from_pylist(data, dtype=DataType.python())
 
     target_dtype = DataType.fixed_size_list(DataType.from_arrow_type(dtype), 3)
 
@@ -417,7 +417,7 @@ def test_series_cast_python_to_embedding(dtype) -> None:
         (1, 2, 3),
         None,
     ]
-    s = Series.from_pylist(data, pyobj="force")
+    s = Series.from_pylist(data, dtype=DataType.python())
 
     target_dtype = DataType.embedding(DataType.from_arrow_type(dtype), 3)
 
@@ -464,7 +464,7 @@ def test_series_cast_numpy_to_image() -> None:
         np.arange(12, 39, dtype=np.uint8).reshape((3, 3, 3)),
         None,
     ]
-    s = Series.from_pylist(data, pyobj="force")
+    s = Series.from_pylist(data, dtype=DataType.python())
 
     target_dtype = DataType.image("RGB")
 
@@ -486,7 +486,7 @@ def test_series_cast_numpy_to_image_infer_mode() -> None:
         np.arange(4, 31, dtype=np.uint8).reshape((3, 3, 3)),
         None,
     ]
-    s = Series.from_pylist(data, pyobj="force")
+    s = Series.from_pylist(data, dtype=DataType.python())
 
     target_dtype = DataType.image()
 
@@ -527,7 +527,7 @@ def test_series_cast_python_to_fixed_shape_image() -> None:
         np.arange(12, 24, dtype=np.uint8).reshape(shape),
         None,
     ]
-    s = Series.from_pylist(data, pyobj="force")
+    s = Series.from_pylist(data, dtype=DataType.python())
 
     target_dtype = DataType.image("RGB", height, width)
 
@@ -549,7 +549,7 @@ def test_series_cast_numpy_to_tensor() -> None:
         np.arange(12, 39, dtype=np.uint8).reshape((3, 3, 3)),
         None,
     ]
-    s = Series.from_pylist(data, pyobj="force")
+    s = Series.from_pylist(data, dtype=DataType.python())
 
     target_dtype = DataType.tensor(DataType.uint8())
 
@@ -570,7 +570,7 @@ def test_series_cast_numpy_to_fixed_shape_tensor() -> None:
         np.arange(4, 8, dtype=np.uint8).reshape(shape),
         None,
     ]
-    s = Series.from_pylist(data, pyobj="force")
+    s = Series.from_pylist(data, dtype=DataType.python())
 
     target_dtype = DataType.tensor(DataType.uint8(), shape)
 
@@ -596,7 +596,7 @@ def test_series_cast_image_to_fixed_shape_image() -> None:
         np.arange(12, 24, dtype=np.uint8).reshape(shape),
         None,
     ]
-    s = Series.from_pylist(data, pyobj="force")
+    s = Series.from_pylist(data, dtype=DataType.python())
 
     target_dtype = DataType.image("RGB")
 
@@ -621,7 +621,7 @@ def test_series_cast_image_to_tensor() -> None:
         np.arange(12, 39, dtype=np.uint8).reshape((3, 3, 3)),
         None,
     ]
-    s = Series.from_pylist(data, pyobj="force")
+    s = Series.from_pylist(data, dtype=DataType.python())
 
     target_dtype = DataType.image("RGB")
 
@@ -650,7 +650,7 @@ def test_series_cast_image_to_fixed_shape_tensor() -> None:
         np.arange(12, 24, dtype=np.uint8).reshape(shape),
         None,
     ]
-    s = Series.from_pylist(data, pyobj="force")
+    s = Series.from_pylist(data, dtype=DataType.python())
 
     target_dtype = DataType.image("RGB")
 
@@ -678,7 +678,7 @@ def test_series_cast_fixed_shape_image_to_image() -> None:
         np.arange(12, 24, dtype=np.uint8).reshape(shape),
         None,
     ]
-    s = Series.from_pylist(data, pyobj="force")
+    s = Series.from_pylist(data, dtype=DataType.python())
 
     target_dtype = DataType.image("RGB", height, width)
 
@@ -706,7 +706,7 @@ def test_series_cast_fixed_shape_image_to_fixed_shape_tensor() -> None:
         np.arange(12, 24, dtype=np.uint8).reshape(shape),
         None,
     ]
-    s = Series.from_pylist(data, pyobj="force")
+    s = Series.from_pylist(data, dtype=DataType.python())
 
     target_dtype = DataType.image("RGB", height, width)
 
@@ -734,7 +734,7 @@ def test_series_cast_fixed_shape_image_to_tensor() -> None:
         np.arange(12, 24, dtype=np.uint8).reshape(shape),
         None,
     ]
-    s = Series.from_pylist(data, pyobj="force")
+    s = Series.from_pylist(data, dtype=DataType.python())
 
     target_dtype = DataType.image("RGB", height, width)
 
@@ -763,7 +763,7 @@ def test_series_cast_fixed_shape_tensor_to_tensor() -> None:
         np.arange(12, 24, dtype=np.uint8).reshape(shape),
         None,
     ]
-    s = Series.from_pylist(data, pyobj="force")
+    s = Series.from_pylist(data, dtype=DataType.python())
 
     target_dtype = DataType.tensor(DataType.uint8(), shape)
 
@@ -792,7 +792,7 @@ def test_series_cast_embedding_to_fixed_shape_tensor() -> None:
         np.arange(4, 8, dtype=np.uint8).reshape(shape),
         None,
     ]
-    s = Series.from_pylist(data, pyobj="force")
+    s = Series.from_pylist(data, dtype=DataType.python())
 
     target_dtype = DataType.embedding(DataType.uint8(), 4)
 
@@ -819,7 +819,7 @@ def test_series_cast_embedding_to_tensor() -> None:
         np.arange(4, 8, dtype=np.uint8).reshape(shape),
         None,
     ]
-    s = Series.from_pylist(data, pyobj="force")
+    s = Series.from_pylist(data, dtype=DataType.python())
 
     target_dtype = DataType.embedding(DataType.uint8(), 4)
 
@@ -1302,3 +1302,16 @@ def test_series_cast_fixed_shape_sparse_without_indices_offset_to_regular(sparse
 
     regular_fixed_shape_series = regular_fixed_shape_series.to_pylist()
     np.testing.assert_equal(regular_fixed_shape_series, sparse_tensor_data)
+
+
+# see: https://github.com/Eventual-Inc/Daft/issues/4426
+def test_cast_list_list_to_list_tensor():
+    boxes = [
+        [[100, 100, 200, 200], [300, 300, 400, 400], [500, 500, 600, 600], [700, 700, 800, 800], [900, 900, 1000, 1000]]
+        for _ in range(5)
+    ]
+
+    s = Series.from_pylist(boxes)
+    cast_to = DataType.list(DataType.tensor(DataType.int64(), shape=(4,)))
+    s = s.cast(cast_to)
+    assert s.datatype() == cast_to

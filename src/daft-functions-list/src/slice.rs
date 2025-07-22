@@ -1,4 +1,4 @@
-use common_error::{ensure, DaftError, DaftResult};
+use common_error::{ensure, DaftResult};
 use daft_core::{
     prelude::{Field, Schema},
     series::Series,
@@ -19,13 +19,13 @@ impl ScalarUDF for ListSlice {
     fn name(&self) -> &'static str {
         "list_slice"
     }
-    fn evaluate(&self, inputs: daft_dsl::functions::FunctionArgs<Series>) -> DaftResult<Series> {
+    fn call(&self, inputs: daft_dsl::functions::FunctionArgs<Series>) -> DaftResult<Series> {
         let input = inputs.required((0, "input"))?;
         let start = inputs.required((1, "start"))?;
         let end = inputs.required((2, "end"))?;
         input.list_slice(start, end)
     }
-    fn function_args_to_field(
+    fn get_return_field(
         &self,
         inputs: FunctionArgs<ExprRef>,
         schema: &Schema,
@@ -62,45 +62,6 @@ impl ScalarUDF for ListSlice {
         }
 
         input.to_exploded_field()?.to_list_field()
-    }
-
-    fn to_field(&self, inputs: &[ExprRef], schema: &Schema) -> DaftResult<Field> {
-        match inputs {
-            [input, start, end] => {
-                let input_field = input.to_field(schema)?;
-                let start_field = start.to_field(schema)?;
-                let end_field = end.to_field(schema)?;
-
-                if !start_field.dtype.is_integer() {
-                    return Err(DaftError::TypeError(format!(
-                        "Expected start index to be integer, received: {}",
-                        start_field.dtype
-                    )));
-                }
-
-                if !end_field.dtype.is_integer() && !end_field.dtype.is_null() {
-                    return Err(DaftError::TypeError(format!(
-                        "Expected end index to be integer or unprovided, received: {}",
-                        end_field.dtype
-                    )));
-                }
-                Ok(input_field.to_exploded_field()?.to_list_field()?)
-            }
-            _ => Err(DaftError::SchemaMismatch(format!(
-                "Expected 3 input args, got {}",
-                inputs.len()
-            ))),
-        }
-    }
-
-    fn evaluate_from_series(&self, inputs: &[Series]) -> DaftResult<Series> {
-        match inputs {
-            [input, start, end] => Ok(input.list_slice(start, end)?),
-            _ => Err(DaftError::ValueError(format!(
-                "Expected 1 input arg, got {}",
-                inputs.len()
-            ))),
-        }
     }
 }
 

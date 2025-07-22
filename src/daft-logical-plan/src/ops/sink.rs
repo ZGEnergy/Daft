@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use daft_core::prelude::*;
+use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "python")]
 use crate::sink_info::CatalogType;
@@ -11,9 +12,10 @@ use crate::{
     LogicalPlan,
 };
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Sink {
     pub plan_id: Option<usize>,
+    pub node_id: Option<usize>,
     // Upstream node.
     pub input: Arc<LogicalPlan>,
     pub schema: SchemaRef,
@@ -60,6 +62,7 @@ impl Sink {
         let schema = Schema::new(fields).into();
         Ok(Self {
             plan_id: None,
+            node_id: None,
             input,
             schema,
             sink_info,
@@ -69,6 +72,11 @@ impl Sink {
 
     pub fn with_plan_id(mut self, plan_id: usize) -> Self {
         self.plan_id = Some(plan_id);
+        self
+    }
+
+    pub fn with_node_id(mut self, node_id: usize) -> Self {
+        self.node_id = Some(node_id);
         self
     }
 

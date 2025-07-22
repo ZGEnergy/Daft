@@ -67,3 +67,7 @@ next-env.d.ts
 site
 
 zge_test_scripts*
+# added by vim
+*.swp
+*.swo
+
