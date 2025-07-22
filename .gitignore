@@ -66,6 +66,8 @@ next-env.d.ts
 # docs build
 site
 
+zge_test_scripts*
 # added by vim
 *.swp
 *.swo
+

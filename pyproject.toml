@@ -17,7 +17,7 @@ maintainers = [
   {name = "Sammy Sidhu", email = "sammy@eventualcomputing.com"},
   {name = "Jay Chia", email = "jay@eventualcomputing.com"}
 ]
-name = "daft"
+name = "zge-daft"
 readme = "README.rst"
 requires-python = ">=3.9"
 
@@ -50,6 +50,7 @@ daft = "daft.cli:main"
 [project.urls]
 homepage = "https://www.getdaft.io"
 repository = "https://github.com/Eventual-Inc/Daft"
+private-repository = "https://us-central1-python.pkg.dev/zge-main/zge-private-python"
 
 [tool]
 
